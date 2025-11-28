@@ -1,0 +1,177 @@
+import { Response } from 'express';
+import { PrismaClient } from '@prisma/client';
+import { z } from 'zod';
+import { AuthRequest } from '../middleware/authMiddleware';
+import { awardTrophies, checkAndAwardBadges, awardZions } from '../services/gamificationService';
+
+const prisma = new PrismaClient();
+
+const createPostSchema = z.object({
+    caption: z.string().optional(),
+    imageUrl: z.string().optional(),
+    videoUrl: z.string().optional(),
+    tags: z.array(z.string()).optional(),
+    isHighlight: z.boolean().optional(),
+    mediaType: z.enum(['IMAGE', 'VIDEO', 'TEXT']).default('IMAGE'),
+});
+
+export const createPost = async (req: AuthRequest, res: Response) => {
+    try {
+        const userId = req.user?.userId;
+        if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+        const data = createPostSchema.parse(req.body);
+
+        // Check for highlight eligibility and cost
+        if (data.isHighlight) {
+            const user = await prisma.user.findUnique({ where: { id: userId } });
+
+            // If user is not found, return error
+            if (!user) return res.status(401).json({ error: 'User not found' });
+
+            // If NOT admin, check balance and deduct
+            if (user.role !== 'ADMIN') {
+                if (user.zions < 300) {
+                    return res.status(403).json({ error: 'Zions insuficientes para destaque (Custo: 300 Zions)' });
+                }
+
+                // Deduct Zions
+                await prisma.user.update({
+                    where: { id: userId },
+                    data: { zions: { decrement: 300 } }
+                });
+
+                // Log transaction
+                await prisma.zionHistory.create({
+                    data: {
+                        userId,
+                        amount: -300,
+                        reason: 'Highlight Post Cost'
+                    }
+                });
+            }
+        }
+
+        const post = await prisma.post.create({
+            data: {
+                userId,
+                caption: data.caption,
+                imageUrl: data.imageUrl,
+                videoUrl: data.videoUrl,
+                isHighlight: data.isHighlight || false,
+                mediaType: data.mediaType,
+                tags: {
+                    create: data.tags?.map(tag => ({ tag })) || [],
+                },
+            },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        name: true,
+                        avatarUrl: true,
+                        trophies: true,
+                    }
+                },
+                tags: true,
+            }
+        });
+
+        // --- GAMIFICATION ---
+
+        // 1. Award Zions (1) and XP (10)
+        await awardZions(userId, 1, 'Created a post');
+        await prisma.user.update({
+            where: { id: userId },
+            data: { xp: { increment: 10 } }
+        });
+
+        // 2. Check Badges (Trophies awarded if badge earned)
+        const badgeResult = await checkAndAwardBadges(userId, 'POST');
+
+        res.status(201).json({
+            ...post,
+            newBadges: badgeResult?.newBadges || [],
+            zionsEarned: 1
+        });
+    } catch (error) {
+        if (error instanceof z.ZodError) {
+            return res.status(400).json({ error: (error as any).errors });
+        }
+        console.error(error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
+export const getPosts = async (req: AuthRequest, res: Response) => {
+    try {
+        const posts = await prisma.post.findMany({
+            orderBy: { createdAt: 'desc' },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        name: true,
+                        avatarUrl: true,
+                        trophies: true,
+                    }
+                },
+                tags: true,
+                likes: true,
+                comments: true,
+            }
+        });
+        res.json(posts);
+    } catch (error) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
+export const deletePost = async (req: AuthRequest, res: Response) => {
+    try {
+        const userId = req.user?.userId;
+        const { id } = req.params;
+
+        const post = await prisma.post.findUnique({ where: { id } });
+        if (!post) return res.status(404).json({ error: 'Post not found' });
+
+        if (post.userId !== userId) {
+            return res.status(403).json({ error: 'Unauthorized' });
+        }
+
+        // Delete related records first (cascading delete manually)
+        await prisma.$transaction([
+            prisma.comment.deleteMany({ where: { postId: id } }),
+            prisma.like.deleteMany({ where: { postId: id } }),
+            prisma.postTag.deleteMany({ where: { postId: id } }),
+            prisma.post.delete({ where: { id } })
+        ]);
+
+        res.json({ message: 'Post deleted' });
+    } catch (error) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
+export const getComments = async (req: AuthRequest, res: Response) => {
+    try {
+        const { postId } = req.params;
+        const comments = await prisma.comment.findMany({
+            where: { postId },
+            orderBy: { createdAt: 'asc' },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        name: true,
+                        displayName: true,
+                        avatarUrl: true,
+                    }
+                }
+            }
+        });
+        res.json(comments);
+    } catch (error) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};

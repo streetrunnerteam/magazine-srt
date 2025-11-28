@@ -1,0 +1,245 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String        @id @default(uuid())
+  email        String        @unique
+  passwordHash String
+  name         String
+  displayName  String?
+  avatarUrl    String?
+  bio          String?
+  role         Role          @default(MEMBER)
+  points       Int           @default(0)
+  trophies     Int           @default(0)
+  level        Int           @default(1)
+  xp           Int           @default(0)
+  zions        Int           @default(0)
+  membershipType MembershipType @default(MAGAZINE)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  resetToken   String?
+  resetTokenExpiry DateTime?
+  
+  posts        Post[]
+  comments     Comment[]
+  likes        Like[]
+  badges       UserBadge[]
+  pointHistory PointHistory[]
+  zionHistory  ZionHistory[]
+  redemptions  Redemption[]
+  notifications Notification[]
+  
+  sentFriendRequests     Friendship[] @relation("FriendRequestsSent")
+  receivedFriendRequests Friendship[] @relation("FriendRequestsReceived")
+}
+
+model Post {
+  id          String    @id @default(uuid())
+  userId      String
+  imageUrl    String?
+  videoUrl    String?
+  caption     String?
+  likesCount  Int       @default(0)
+  commentsCount Int     @default(0)
+  isHighlight Boolean   @default(false)
+  mediaType   MediaType @default(IMAGE)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user        User      @relation(fields: [userId], references: [id])
+  comments    Comment[]
+  likes       Like[]
+  tags        PostTag[]
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  postId    String
+  userId    String
+  text      String
+  createdAt DateTime @default(now())
+
+  post      Post     @relation(fields: [postId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model Like {
+  id        String   @id @default(uuid())
+  postId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  post      Post     @relation(fields: [postId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([postId, userId])
+}
+
+model Badge {
+  id          String      @id @default(uuid())
+  name        String
+  description String
+  iconUrl     String
+  trophies    Int         @default(0)
+  users       UserBadge[]
+}
+
+model UserBadge {
+  userId    String
+  badgeId   String
+  awardedAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id])
+  badge     Badge    @relation(fields: [badgeId], references: [id])
+
+  @@id([userId, badgeId])
+}
+
+model Reward {
+  id          String       @id @default(uuid())
+  title       String
+  type        RewardType
+  costZions   Int          @default(0)
+  stock       Int
+  metadata    Json?
+  redemptions Redemption[]
+}
+
+model Redemption {
+  id         String   @id @default(uuid())
+  userId     String
+  rewardId   String
+  cost       Int
+  redeemedAt DateTime @default(now())
+
+  user       User     @relation(fields: [userId], references: [id])
+  reward     Reward   @relation(fields: [rewardId], references: [id])
+}
+
+model PointHistory {
+  id        String   @id @default(uuid())
+  userId    String
+  amount    Int
+  reason    String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model ZionHistory {
+  id        String   @id @default(uuid())
+  userId    String
+  amount    Int
+  reason    String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model Friendship {
+  id          String           @id @default(uuid())
+  requesterId String
+  addresseeId String
+  status      FriendshipStatus @default(PENDING)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  requester   User @relation("FriendRequestsSent", fields: [requesterId], references: [id])
+  addressee   User @relation("FriendRequestsReceived", fields: [addresseeId], references: [id])
+
+  @@unique([requesterId, addresseeId])
+}
+
+enum Role {
+  MEMBER
+  ADMIN
+  VISITOR
+}
+
+enum MembershipType {
+  MAGAZINE
+  SRT
+}
+
+enum RewardType {
+  PRODUCT
+  COUPON
+  DIGITAL
+}
+
+enum NotificationType {
+  LIKE
+  COMMENT
+  SYSTEM
+  BADGE
+  FRIEND_REQUEST
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+  TEXT
+}
+
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  type      NotificationType
+  content   String
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model PostTag {
+  id     String @id @default(uuid())
+  postId String
+  tag    String
+
+  post Post @relation(fields: [postId], references: [id])
+}
+
+model InviteRequest {
+  id        String        @id @default(uuid())
+  name      String
+  email     String        @unique
+  instagram String?
+  status    RequestStatus @default(PENDING)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+}
+
+model Announcement {
+  id               String   @id @default(uuid())
+  title            String
+  logoUrl          String
+  tag              String
+  subscriptionType String
+  description      String
+  backgroundImageUrl String?
+  buttonText       String   @default("Conhecer Agora")
+  link             String   @default("/srt-log")
+  active           Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}

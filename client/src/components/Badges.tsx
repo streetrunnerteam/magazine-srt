@@ -1,0 +1,67 @@
+import { useEffect, useState } from 'react';
+import api from '../services/api';
+import { Award, Lock } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+
+interface Badge {
+    id: string;
+    name: string;
+    description: string;
+    imageUrl: string;
+    isEarned: boolean;
+    trophies: number;
+}
+
+export default function Badges() {
+    const [badges, setBadges] = useState<Badge[]>([]);
+    const { user } = useAuth();
+    const isSRT = user?.membershipType === 'SRT';
+
+    const themeBorder = isSRT ? 'border-red-500/20' : 'border-gold-500/20';
+    const themeIcon = isSRT ? 'text-red-400' : 'text-gold-400';
+    const themeShadow = isSRT ? 'group-hover:shadow-[0_0_30px_rgba(220,20,60,0.4)]' : 'group-hover:shadow-[0_0_30px_rgba(212,175,55,0.4)]';
+
+    useEffect(() => {
+        const fetchBadges = async () => {
+            try {
+                const response = await api.get('/gamification/badges');
+                setBadges(response.data);
+            } catch (error) {
+                console.error('Failed to fetch badges', error);
+            }
+        };
+
+        fetchBadges();
+    }, []);
+
+    return (
+        <div className={`glass-panel rounded-xl p-6 border ${themeBorder}`}>
+            <div className="flex items-center gap-3 mb-6">
+                <Award className={`w-6 h-6 ${themeIcon}`} />
+                <h3 className="text-xl font-serif text-white tracking-wider uppercase">Conquistas</h3>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+                {badges.map((badge) => (
+                    <div key={badge.id} className={`flex flex-col items-center text-center group ${badge.isEarned ? 'opacity-100' : 'opacity-40 grayscale'}`}>
+                        <div className={`w-16 h-16 rounded-full bg-black/40 border ${isSRT ? 'border-red-500/30 group-hover:border-red-500/60' : 'border-gold-500/30 group-hover:border-gold-500/60'} flex items-center justify-center mb-2 relative overflow-hidden transition-all duration-300 group-hover:scale-105 ${themeShadow}`}>
+                            {badge.imageUrl ? (
+                                <img src={badge.imageUrl} alt={badge.name} className="w-full h-full object-cover" />
+                            ) : (
+                                <Award className={`w-8 h-8 ${isSRT ? 'text-red-500' : 'text-gold-500'}`} />
+                            )}
+                            {!badge.isEarned && (
+                                <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                                    <Lock className="w-6 h-6 text-white/50" />
+                                </div>
+                            )}
+                        </div>
+                        <p className="text-xs text-white font-medium mb-1">{badge.name}</p>
+                        <p className={`text-[10px] ${isSRT ? 'text-red-400' : 'text-gold-400'} font-bold mb-1`}>+{badge.trophies} Troféus</p>
+                        <p className="text-[10px] text-gray-300 leading-tight hidden group-hover:block transition-all">{badge.description}</p>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}

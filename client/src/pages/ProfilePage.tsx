@@ -1,0 +1,392 @@
+import { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { useSearchParams } from 'react-router-dom';
+import api from '../services/api';
+import Header from '../components/Header';
+import Ranking from '../components/Ranking';
+import Badges from '../components/Badges';
+import Rewards from '../components/Rewards';
+import { Camera, Edit2, Palette, Trash2, Share2, UserPlus, UserCheck } from 'lucide-react';
+import EditProfileModal from '../components/EditProfileModal';
+import LuxuriousBackground from '../components/LuxuriousBackground';
+import ToastNotification from '../components/ToastNotification';
+import ConfirmModal from '../components/ConfirmModal';
+
+
+
+export default function ProfilePage() {
+    const { user: currentUser, theme, toggleTheme } = useAuth();
+    const [searchParams] = useSearchParams();
+    const paramId = searchParams.get('id');
+
+    const [profileUser, setProfileUser] = useState<any>(null);
+    const [isOwnProfile, setIsOwnProfile] = useState(true);
+    const [friendshipStatus, setFriendshipStatus] = useState<'NONE' | 'PENDING' | 'ACCEPTED' | 'REJECTED'>('NONE');
+    const [isRequester, setIsRequester] = useState(false);
+
+    const [activeTab, setActiveTab] = useState<'posts' | 'badges' | 'rewards'>('posts');
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [userPosts, setUserPosts] = useState<any[]>([]);
+    const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; postId: string | null }>({
+        isOpen: false,
+        postId: null
+    });
+    const [bgImage, setBgImage] = useState<string | null>(null);
+    const [toast, setToast] = useState({ message: '', isVisible: false, type: 'success' as 'success' | 'error' | 'info' });
+
+    useEffect(() => {
+        if (profileUser) {
+            const savedBg = localStorage.getItem(`profile_bg_${profileUser.id}`);
+            if (savedBg) setBgImage(savedBg);
+        }
+    }, [profileUser]);
+
+    useEffect(() => {
+        const loadProfile = async () => {
+            if (!currentUser) return;
+
+            const targetId = paramId || currentUser.id;
+            const isOwn = targetId === currentUser.id;
+            setIsOwnProfile(isOwn);
+
+            if (isOwn) {
+                setProfileUser(currentUser);
+            } else {
+                try {
+                    const response = await api.get(`/users/${targetId}`);
+                    setProfileUser(response.data);
+
+                    // Check friendship
+                    const statusRes = await api.get(`/social/status/${targetId}`);
+                    setFriendshipStatus(statusRes.data.status);
+                    setIsRequester(statusRes.data.isRequester);
+                } catch (error) {
+                    console.error('Failed to load profile', error);
+                    showToast('Usuário não encontrado', 'error');
+                }
+            }
+        };
+        loadProfile();
+    }, [currentUser, paramId]);
+
+    useEffect(() => {
+        if (profileUser && activeTab === 'posts') {
+            const fetchUserPosts = async () => {
+                try {
+                    const response = await api.get(`/users/${profileUser.id}/posts`);
+                    setUserPosts(response.data);
+                } catch (error) {
+                    console.error('Failed to fetch user posts', error);
+                }
+            };
+            fetchUserPosts();
+        }
+    }, [profileUser, activeTab]);
+
+    const handleAddFriend = async () => {
+        try {
+            await api.post(`/social/request/${profileUser.id}`);
+            setFriendshipStatus('PENDING');
+            setIsRequester(true);
+            showToast('Solicitação de amizade enviada!', 'success');
+        } catch (error) {
+            showToast('Erro ao enviar solicitação', 'error');
+        }
+    };
+
+    const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
+        setToast({ message, isVisible: true, type });
+    };
+
+    const handleShare = (postId: string | number) => {
+        navigator.clipboard.writeText(`${window.location.origin}/post/${postId}`);
+        showToast('Link copiado para a área de transferência!', 'success');
+    };
+
+    const handleDeletePost = async () => {
+        if (!deleteModal.postId) return;
+        try {
+            await api.delete(`/posts/${deleteModal.postId}`);
+            setUserPosts(userPosts.filter(p => p.id !== deleteModal.postId));
+            setDeleteModal({ isOpen: false, postId: null });
+            showToast('Postagem deletada com sucesso', 'success');
+        } catch (error) {
+            console.error('Failed to delete post', error);
+            showToast('Erro ao deletar postagem', 'error');
+        }
+    };
+
+    if (!profileUser) return <div className="min-h-screen flex items-center justify-center text-gold-500">Carregando perfil...</div>;
+
+    const isSRT = profileUser.membershipType === 'SRT';
+
+    return (
+        <div className="min-h-screen pb-20 relative text-white font-sans selection:bg-gold-500/30">
+            <LuxuriousBackground />
+            <Header />
+
+            <ToastNotification
+                message={toast.message}
+                isVisible={toast.isVisible}
+                onClose={() => setToast(prev => ({ ...prev, isVisible: false }))}
+                type={toast.type}
+            />
+
+            {isOwnProfile && <EditProfileModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} />}
+
+            <ConfirmModal
+                isOpen={deleteModal.isOpen}
+                onClose={() => setDeleteModal({ isOpen: false, postId: null })}
+                onConfirm={handleDeletePost}
+                title="Deletar Postagem"
+                message="Tem certeza que deseja remover esta postagem permanentemente? Esta ação não pode ser desfeita."
+                confirmText="Deletar"
+            />
+
+            <div className="max-w-7xl mx-auto pt-32 pb-32 px-4 relative z-10">
+                {/* Profile Card */}
+                <div className={`glass-panel p-8 rounded-3xl border ${theme === 'light' ? 'border-gray-200' : 'border-white/10'} relative overflow-hidden transition-all duration-500 mb-8`}>
+                    {bgImage && (
+                        <div
+                            className="absolute inset-0 bg-cover bg-center z-0 opacity-50 blur-sm"
+                            // eslint-disable-next-line react-dom/no-unsafe-inline-style
+                            style={{ backgroundImage: `url(${bgImage})` }}
+                        />
+                    )}
+                    <div className={`absolute inset-0 bg-gradient-to-b ${isSRT ? 'from-red-900/20' : 'from-gold-500/10'} ${theme === 'light' ? 'to-white/80' : 'to-black/80'} z-0`} />
+                    <div className="flex flex-col md:flex-row gap-8 items-center md:items-start relative z-10">
+                        {/* Avatar */}
+                        <div className="relative group mx-auto md:mx-0 shrink-0">
+                            <div className={`w-28 h-28 md:w-32 md:h-32 rounded-full p-1 bg-gradient-to-br ${isSRT ? 'from-red-600 via-black to-red-800 shadow-[0_0_30px_rgba(255,0,0,0.3)]' : 'from-gold-300 via-gold-500 to-gold-800 shadow-[0_0_30px_rgba(212,175,55,0.3)]'}`}>
+                                <div className="w-full h-full rounded-full bg-black overflow-hidden relative">
+                                    <img
+                                        src={profileUser.avatarUrl || `https://ui-avatars.com/api/?name=${profileUser.name}&background=000&color=${isSRT ? 'ff0000' : 'd4af37'}`}
+                                        alt={profileUser.name}
+                                        className="w-full h-full object-cover"
+                                    />
+                                    {isOwnProfile && (
+                                        <div
+                                            className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                                            onClick={() => setIsEditModalOpen(true)}
+                                            role="button"
+                                            aria-label="Change avatar"
+                                            tabIndex={0}
+                                        >
+                                            <Camera className="w-8 h-8 text-white" />
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                            <div className={`absolute -bottom-2 left-1/2 -translate-x-1/2 ${isSRT ? 'bg-red-600 text-white' : 'bg-gold-500 text-black'} text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest shadow-lg whitespace-nowrap z-20`}>
+                                Lvl {profileUser.level || 1}
+                            </div>
+                            {/* Level Progress Bar */}
+                            <div className={`absolute -bottom-6 left-1/2 -translate-x-1/2 w-24 h-1.5 ${theme === 'light' ? 'bg-gray-300' : 'bg-gray-800/50'} backdrop-blur-md rounded-full overflow-hidden border ${theme === 'light' ? 'border-gray-200' : 'border-white/10'}`}>
+                                <div
+                                    className={`h-full ${isSRT ? 'bg-gradient-to-r from-red-600 to-red-400' : 'bg-gradient-to-r from-gold-600 to-gold-400'} rounded-full transition-all duration-1000`}
+                                    style={{ width: `${Math.min(100, Math.max(0, ((profileUser.xp || 0) - ((profileUser.level || 1) - 1) * 100) / (((profileUser.level || 1) * 100) - ((profileUser.level || 1) - 1) * 100) * 100))}%` }}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Info */}
+                        <div className="flex-1 text-center md:text-left w-full">
+                            <div className="flex flex-col md:flex-row justify-between items-center md:items-start mb-2 gap-4 md:gap-0">
+                                <div>
+                                    <h2 className={`text-2xl font-serif ${theme === 'light' ? 'text-gray-900' : 'text-white'} mb-1`}>{profileUser.displayName || profileUser.name}</h2>
+                                    <p className={`text-sm uppercase tracking-widest mb-2 font-medium ${isSRT ? 'text-red-500 text-shine-red' : 'text-gold-400 text-shine-gold'}`}>
+                                        {isSRT ? 'Membro SRT' : 'Membro Magazine'}
+                                    </p>
+                                    {profileUser.bio && <p className={`${theme === 'light' ? 'text-gray-600' : 'text-gray-300'} text-sm italic mb-4 max-w-md mx-auto md:mx-0`}>"{profileUser.bio}"</p>}
+                                </div>
+                                <div className="flex gap-2">
+                                    {isOwnProfile ? (
+                                        <>
+                                            <div className="relative">
+                                                <button
+                                                    onClick={() => document.getElementById('bg-upload')?.click()}
+                                                    className={`flex items-center justify-center w-8 h-8 rounded-full border ${theme === 'light' ? 'border-gray-300 hover:bg-gray-200' : 'border-white/10 hover:bg-white/5'} transition-colors group shrink-0`}
+                                                    title="Alterar Imagem de Fundo"
+                                                >
+                                                    <Palette className={`w-4 h-4 ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'} group-hover:text-gold-400 transition-colors`} />
+                                                </button>
+                                                <input
+                                                    id="bg-upload"
+                                                    aria-label="Upload background image"
+                                                    type="file"
+                                                    accept="image/*"
+                                                    className="hidden"
+                                                    onChange={(e) => {
+                                                        const file = e.target.files?.[0];
+                                                        if (file) {
+                                                            const reader = new FileReader();
+                                                            reader.onloadend = () => {
+                                                                const result = reader.result as string;
+                                                                if (currentUser) {
+                                                                    localStorage.setItem(`profile_bg_${currentUser.id}`, result);
+                                                                    window.location.reload();
+                                                                }
+                                                            };
+                                                            reader.readAsDataURL(file);
+                                                        }
+                                                    }}
+                                                />
+                                            </div>
+                                            <button
+                                                onClick={() => setIsEditModalOpen(true)}
+                                                className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-colors group shrink-0 ${theme === 'light' ? 'border-gray-400 bg-gray-200 text-gray-800' : 'border-white/10 hover:bg-white/5 text-gray-400'}`}
+                                            >
+                                                <Edit2 className={`w-4 h-4 transition-colors ${theme === 'light' ? 'text-gray-800' : 'text-gray-400 group-hover:text-white'}`} />
+                                                <span className={`text-xs transition-colors ${theme === 'light' ? 'text-gray-800' : 'text-gray-400 group-hover:text-white'}`}>Editar Perfil</span>
+                                            </button>
+                                            {currentUser?.role === 'ADMIN' && (
+                                                <button
+                                                    onClick={() => window.location.href = '/admin'}
+                                                    className="flex items-center gap-2 px-4 py-2 rounded-full border border-gold-500/30 bg-gold-500/10 hover:bg-gold-500/20 transition-colors group shrink-0"
+                                                >
+                                                    <span className="text-xs text-gold-400 font-medium">Admin</span>
+                                                </button>
+                                            )}
+                                            {isSRT && (
+                                                <button
+                                                    onClick={toggleTheme}
+                                                    className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-colors group shrink-0 ${theme === 'light' ? 'border-gray-400 bg-gray-200 text-gray-800' : 'border-white/10 hover:bg-white/5 text-gray-400'}`}
+                                                >
+                                                    <span className="text-xs font-medium">{theme === 'light' ? 'Modo Escuro' : 'Modo Claro'}</span>
+                                                </button>
+                                            )}
+                                        </>
+                                    ) : (
+                                        <>
+                                            {friendshipStatus === 'NONE' && (
+                                                <button
+                                                    onClick={handleAddFriend}
+                                                    className="flex items-center gap-2 px-4 py-2 rounded-full bg-gold-500 text-black hover:bg-gold-400 transition-colors shadow-lg shadow-gold-500/20"
+                                                >
+                                                    <UserPlus className="w-4 h-4" />
+                                                    <span className="text-xs font-bold uppercase tracking-wide">Adicionar</span>
+                                                </button>
+                                            )}
+                                            {friendshipStatus === 'PENDING' && (
+                                                <button
+                                                    disabled
+                                                    className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 text-gray-400 cursor-not-allowed"
+                                                >
+                                                    <UserCheck className="w-4 h-4" />
+                                                    <span className="text-xs font-bold uppercase tracking-wide">
+                                                        {isRequester ? 'Enviado' : 'Pendente'}
+                                                    </span>
+                                                </button>
+                                            )}
+                                            {friendshipStatus === 'ACCEPTED' && (
+                                                <button
+                                                    className="flex items-center gap-2 px-4 py-2 rounded-full bg-green-500/20 text-green-400 border border-green-500/30"
+                                                >
+                                                    <UserCheck className="w-4 h-4" />
+                                                    <span className="text-xs font-bold uppercase tracking-wide">Amigos</span>
+                                                </button>
+                                            )}
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className={`grid grid-cols-2 gap-4 border-t ${theme === 'light' ? 'border-gray-200' : 'border-white/10'} pt-6 mt-4`}>
+                                <div>
+                                    <p className={`text-2xl md:text-3xl font-light ${theme === 'light' ? 'text-gray-900' : 'text-white'} mb-1`}>{profileUser.trophies || 0}</p>
+                                    <p className={`text-[10px] md:text-xs ${theme === 'light' ? 'text-gray-500' : 'text-gray-400'} uppercase tracking-wider`}>Troféus</p>
+                                </div>
+                                <div>
+                                    <p className={`text-2xl md:text-3xl font-light ${theme === 'light' ? 'text-gray-900' : 'text-white'} mb-1`}>#{profileUser.id?.slice(0, 4) || '0000'}</p>
+                                    <p className={`text-[10px] md:text-xs ${theme === 'light' ? 'text-gray-500' : 'text-gray-400'} uppercase tracking-wider`}>ID Membro</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+                {/* Content Tabs */}
+                <div className="flex gap-8 border-b border-white/10 mb-8 px-4 overflow-x-auto scrollbar-hide">
+                    <button
+                        onClick={() => setActiveTab('posts')}
+                        className={`pb-4 text-sm uppercase tracking-widest transition-colors whitespace-nowrap ${activeTab === 'posts' ? (isSRT ? 'text-red-500 border-b-2 border-red-500' : 'text-gold-400 border-b-2 border-gold-400') : 'text-gray-500 hover:text-white'}`}
+                    >
+                        Postagens
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('badges')}
+                        className={`pb-4 text-sm uppercase tracking-widest transition-colors whitespace-nowrap ${activeTab === 'badges' ? (isSRT ? 'text-red-500 border-b-2 border-red-500' : 'text-gold-400 border-b-2 border-gold-400') : 'text-gray-500 hover:text-white'}`}
+                    >
+                        Conquistas
+                    </button>
+                    {isOwnProfile && (
+                        <button
+                            onClick={() => setActiveTab('rewards')}
+                            className={`pb-4 text-sm uppercase tracking-widest transition-colors whitespace-nowrap ${activeTab === 'rewards' ? (isSRT ? 'text-red-500 border-b-2 border-red-500' : 'text-gold-400 border-b-2 border-gold-400') : 'text-gray-500 hover:text-white'}`}
+                        >
+                            Prêmios
+                        </button>
+                    )}
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    {/* Main Content */}
+                    <div className="lg:col-span-2">
+                        {activeTab === 'posts' && (
+                            <div className="space-y-6">
+                                {userPosts.length === 0 ? (
+                                    <div className="text-center py-20 glass-panel rounded-3xl border border-white/5">
+                                        <p className="text-gray-500">Nenhuma postagem ainda.</p>
+                                    </div>
+                                ) : (
+                                    userPosts.map((post) => (
+                                        <div key={post.id} className={`glass-panel rounded-3xl p-6 border ${isSRT ? 'border-red-500/10 hover:border-red-500/30' : 'border-gold-500/10 hover:border-gold-500/30'} transition-all relative group`}>
+                                            {/* Share Button */}
+                                            <button
+                                                onClick={() => handleShare(post.id)}
+                                                className="absolute top-6 right-16 text-gray-500 hover:text-white transition-colors p-2"
+                                                title="Compartilhar"
+                                            >
+                                                <Share2 className="w-4 h-4" />
+                                            </button>
+
+                                            {post.imageUrl && (
+                                                <div className="aspect-video rounded-2xl overflow-hidden mb-4">
+                                                    <img src={post.imageUrl} alt="Post" className="w-full h-full object-cover" />
+                                                </div>
+                                            )}
+                                            <p className="text-gray-300 text-sm mb-3">{post.caption}</p>
+                                            <div className="flex items-center gap-4 text-xs text-gray-500 justify-between">
+                                                <div className="flex gap-4">
+                                                    <span>{new Date(post.createdAt).toLocaleDateString()}</span>
+                                                    <span>{post.likesCount} curtidas</span>
+                                                </div>
+                                                {isOwnProfile && (
+                                                    <button
+                                                        onClick={() => setDeleteModal({ isOpen: true, postId: post.id })}
+                                                        className="text-red-400 hover:text-red-300 transition-colors"
+                                                        aria-label="Deletar postagem"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        )}
+                        {activeTab === 'badges' && <Badges />}
+                        {activeTab === 'rewards' && isOwnProfile && <Rewards />}
+                    </div>
+
+                    {/* Sidebar */}
+                    <div className="space-y-8">
+                        <Ranking />
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}

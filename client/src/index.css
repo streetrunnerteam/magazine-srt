@@ -1,0 +1,345 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-off-black text-white font-sans overflow-x-hidden;
+    background: radial-gradient(circle at 50% 50%, #1a1a1a 0%, #000000 100%);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-serif;
+  }
+}
+
+/* Light Mode Overrides */
+.light body {
+  @apply bg-gray-100 text-gray-900;
+  background: radial-gradient(circle at 50% 50%, #ffffff 0%, #f3f4f6 100%);
+}
+
+.light .glass-panel {
+  @apply bg-white/70 border-gray-200 shadow-xl;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
+}
+
+.light .text-white {
+  @apply text-gray-900;
+}
+
+.light .text-gray-400 {
+  @apply text-gray-600;
+}
+
+.light .bg-black\/40 {
+  @apply bg-white/60 border-gray-200;
+}
+
+.light .bg-white\/5 {
+  @apply bg-black/5 border-black/5;
+}
+
+.light .bg-white\/10 {
+  @apply bg-black/10;
+}
+
+.light .border-white\/10 {
+  @apply border-black/10;
+}
+
+.light .border-white\/5 {
+  @apply border-black/5;
+}
+
+@layer utilities {
+  .glass-panel {
+    @apply bg-black/30 backdrop-blur-2xl border border-white/10 shadow-2xl;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  }
+
+  .text-gradient-gold {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-gold-300 via-gold-100 to-gold-400;
+    text-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+  }
+
+  .animate-gold-shimmer {
+    background: linear-gradient(to right, #bf953f 20%, #fcf6ba 30%, #b38728 70%, #fbf5b7 80%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-fill-color: transparent;
+    background-size: 200% auto;
+    animation: shine 4s linear infinite;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply relative px-8 py-4 rounded-lg bg-gradient-to-r from-gold-600 via-gold-400 to-gold-600 text-black font-bold uppercase tracking-widest transition-all duration-500 overflow-hidden;
+    background-size: 200% auto;
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.4), inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+  }
+
+  .btn-primary:hover {
+    background-position: right center;
+    transform: translateY(-2px);
+    box-shadow: 0 0 40px rgba(212, 175, 55, 0.6), inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+  }
+
+  .btn-primary:active {
+    transform: translateY(1px);
+  }
+
+  .text-gradient-srt {
+    @apply text-white;
+    text-shadow: 0 0 10px rgba(255, 0, 0, 0.8), 0 0 20px rgba(255, 0, 0, 0.4);
+  }
+
+  .btn-srt {
+    @apply relative px-8 py-4 rounded-lg bg-black text-white font-bold uppercase tracking-widest transition-all duration-500 overflow-hidden border border-red-600;
+    box-shadow: 0 0 15px rgba(255, 0, 0, 0.4), inset 0 0 0 1px rgba(255, 0, 0, 0.2);
+  }
+
+  .btn-srt:hover {
+    background: rgba(255, 0, 0, 0.1);
+    transform: translateY(-2px);
+    box-shadow: 0 0 30px rgba(255, 0, 0, 0.6), inset 0 0 0 1px rgba(255, 0, 0, 0.4);
+    border-color: #ff0000;
+  }
+
+  .btn-srt:active {
+    transform: translateY(1px);
+  }
+}
+
+/* Global Animated Background */
+.global-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: -1;
+  background: radial-gradient(circle at 50% -20%, #2a2a2a, #000000);
+  overflow: hidden;
+}
+
+.global-bg::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle at center, rgba(212, 175, 55, 0.05) 0%, transparent 50%);
+  animation: rotate 60s linear infinite;
+}
+
+.global-bg::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 150%;
+  height: 150%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle at center, rgba(212, 175, 55, 0.03) 0%, transparent 60%);
+  animation: pulse 10s ease-in-out infinite alternate;
+}
+
+@keyframes shine {
+  to {
+    background-position: 200% center;
+  }
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse {
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.5;
+  }
+
+  100% {
+    transform: translate(-50%, -50%) scale(1.2);
+    opacity: 0.8;
+  }
+}
+
+.bg-pattern {
+  background-image: url("https://www.transparenttextures.com/patterns/cubes.png");
+  background-size: 40px;
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  opacity: 0.4;
+  mix-blend-mode: overlay;
+}
+
+.gold-flow {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(45deg, #000 0%, #1a1a1a 45%, #d4af37 50%, #1a1a1a 55%, #000 100%);
+  background-size: 400% 400%;
+  animation: goldFlow 15s ease-in-out infinite;
+  opacity: 0.4;
+}
+
+.animated-fog {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(212, 175, 55, 0.05) 0%, transparent 60%);
+  animation: fogMove 30s linear infinite;
+  z-index: -2;
+  pointer-events: none;
+}
+
+@keyframes goldFlow {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes fogMove {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+
+  100% {
+    transform: translate(-20%, -20%) rotate(360deg);
+  }
+}
+
+@keyframes loading-bar {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(200%);
+  }
+}
+
+.animate-loading-bar {
+  animation: loading-bar 1.5s ease-in-out infinite;
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-shimmer {
+  background-size: 200% auto;
+  animation: shine 3s linear infinite;
+}
+
+@keyframes shine-gold {
+  0% {
+    background-position: 200% center;
+  }
+
+  100% {
+    background-position: -200% center;
+  }
+}
+
+.text-shine-gold {
+  background: linear-gradient(to right,
+      #bf953f 20%,
+      #fcf6ba 40%,
+      #b38728 60%,
+      #bf953f 80%);
+  background-size: 200% auto;
+  color: #000;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shine-gold 4s linear infinite;
+}
+
+.text-shine-subtle {
+  background: linear-gradient(to right,
+      #ffffff 20%,
+      #fcf6ba 50%,
+      #ffffff 80%);
+  background-size: 200% auto;
+  color: #fff;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shine-gold 5s linear infinite;
+}
+
+/* SRT Theme Utilities */
+.text-gradient-red {
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-red-600 via-white to-red-600;
+  text-shadow: 0 0 20px rgba(255, 0, 0, 0.3);
+}
+
+.animate-red-shimmer {
+  background: linear-gradient(to right, #cc0000 20%, #ffffff 30%, #990000 70%, #ffcccc 80%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-fill-color: transparent;
+  background-size: 200% auto;
+  animation: shine 4s linear infinite;
+}
+
+.text-shine-red {
+  background: linear-gradient(to right,
+      #cc0000 20%,
+      #ffffff 40%,
+      #990000 60%,
+      #cc0000 80%);
+  background-size: 200% auto;
+  color: #000;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shine-gold 4s linear infinite;
+}
+
+.border-red-glow {
+  box-shadow: 0 0 10px rgba(255, 0, 0, 0.2);
+  border-color: rgba(255, 0, 0, 0.3);
+}
