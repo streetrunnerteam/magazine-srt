@@ -15,7 +15,18 @@ import notificationRoutes from './src/routes/notificationRoutes';
 import postRoutes from './src/routes/postRoutes';
 import inviteRoutes from './src/routes/inviteRoutes';
 
-app.use(cors());
+app.use(cors({
+    origin: [
+        'http://localhost:5173',
+        'http://localhost:3000',
+        'https://magazine-srt-client.vercel.app',
+        'https://magazine-srt-f8pv.vercel.app',
+        /\.vercel\.app$/
+    ],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
