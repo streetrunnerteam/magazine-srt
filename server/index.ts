@@ -7,29 +7,21 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Manual CORS Middleware
-app.use((req, res, next) => {
-    const allowedOrigins = [
-        'http://localhost:5173',
-        'http://localhost:3000',
-        'https://magazine-srt-client.vercel.app',
-        'https://magazine-srt-f8pv.vercel.app'
-    ];
-    const origin = req.headers.origin;
+// Permissive CORS Configuration
+app.use(cors({
+    origin: true, // Reflects the request origin
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
+}));
 
-    if (origin && (allowedOrigins.includes(origin) || /\.vercel\.app$/.test(origin))) {
-        res.setHeader('Access-Control-Allow-Origin', origin);
-    }
-
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-
-    if (req.method === 'OPTIONS') {
-        return res.sendStatus(200);
-    }
-    next();
-});
+// Handle preflight for all routes
+app.options(/.*/, cors({
+    origin: true,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
+}));
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
