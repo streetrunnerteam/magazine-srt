@@ -16,14 +16,24 @@ import postRoutes from './src/routes/postRoutes';
 import inviteRoutes from './src/routes/inviteRoutes';
 
 const corsOptions = {
-    origin: [
-        'http://localhost:5173',
-        'http://localhost:3000',
-        'https://magazine-srt-client.vercel.app',
-        'https://magazine-srt-f8pv.vercel.app',
-        'https://magazine-srt-f8pv-5ot1i1ln8-street-runner-teams-projects.vercel.app',
-        /\.vercel\.app$/
-    ],
+    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+        const allowedOrigins = [
+            'http://localhost:5173',
+            'http://localhost:3000',
+            'https://magazine-srt-client.vercel.app',
+            'https://magazine-srt-f8pv.vercel.app'
+        ];
+
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+
+        if (allowedOrigins.includes(origin) || /\.vercel\.app$/.test(origin)) {
+            callback(null, true);
+        } else {
+            console.log('Blocked by CORS:', origin);
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
