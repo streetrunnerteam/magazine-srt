@@ -9,16 +9,16 @@ const PORT = process.env.PORT || 3000;
 
 // Permissive CORS Configuration
 app.use(cors({
-    origin: true, // Reflects the request origin
-    credentials: true,
+    origin: '*', // Allow ALL origins
+    credentials: false, // Disable credentials (cookies) since we use Bearer tokens
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
 }));
 
 // Handle preflight for all routes
 app.options(/.*/, cors({
-    origin: true,
-    credentials: true,
+    origin: '*',
+    credentials: false,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
 }));
