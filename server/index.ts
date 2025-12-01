@@ -15,19 +15,22 @@ import notificationRoutes from './src/routes/notificationRoutes';
 import postRoutes from './src/routes/postRoutes';
 import inviteRoutes from './src/routes/inviteRoutes';
 
-app.use(cors({
+const corsOptions = {
     origin: [
         'http://localhost:5173',
         'http://localhost:3000',
         'https://magazine-srt-client.vercel.app',
         'https://magazine-srt-f8pv.vercel.app',
+        'https://magazine-srt-f8pv-5ot1i1ln8-street-runner-teams-projects.vercel.app',
         /\.vercel\.app$/
     ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-}));
-app.options('*', cors());
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
