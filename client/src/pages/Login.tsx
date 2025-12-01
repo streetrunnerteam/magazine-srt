@@ -52,7 +52,11 @@ export default function Login() {
             <div className={`z-10 w-full max-w-md glass-panel rounded-2xl p-10 relative overflow-hidden group ${isSRT ? 'border-red-600/50 bg-black/90' : 'border-gold-500/30'}`}>
                 <div className={`absolute inset-0 bg-gradient-to-br ${isSRT ? 'from-red-900/20 via-black to-red-900/10' : 'from-gold-500/5'} to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none`} />
                 {isSRT && (
-                    <div className="absolute inset-0 opacity-10 pointer-events-none bg-[url('/patterns/cubes.png')] bg-[length:30px]" />
+                    // eslint-disable-next-line react-dom/no-unsafe-inline-style
+                    <div className="absolute inset-0 opacity-10 pointer-events-none" style={{
+                        backgroundImage: 'radial-gradient(#cc0000 1px, transparent 1px)',
+                        backgroundSize: '20px 20px'
+                    }} />
                 )}
 
                 <div className="text-center mb-10 relative z-10">

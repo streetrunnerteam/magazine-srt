@@ -181,20 +181,22 @@ export default function StoryViewer({ stories, initialStoryIndex, onClose, onSto
 
                 {/* Footer / Actions */}
                 <div className="absolute bottom-0 left-0 right-0 z-20 p-4 flex items-center gap-4 pb-8 md:pb-4">
-                    {currentStory.user.id !== user?.id && (
+                    {currentStory.user.id !== user?.id && user?.role !== 'VISITOR' && (
                         <input
                             type="text"
                             placeholder="Enviar mensagem..."
                             className="flex-1 bg-transparent border border-white/30 rounded-full px-4 py-2 text-white placeholder-white/70 focus:outline-none focus:border-white/60 backdrop-blur-sm"
                         />
                     )}
-                    <button
-                        className={`p-2 hover:scale-110 transition-transform ml-auto ${isLiked ? (isSRT ? 'text-red-500' : 'text-gold-500') : 'text-white'}`}
-                        onClick={handleLike}
-                    >
-                        <Heart className={`w-6 h-6 ${isLiked ? 'fill-current' : ''}`} />
-                    </button>
-                    {currentStory.user.id !== user?.id && (
+                    {user?.role !== 'VISITOR' && (
+                        <button
+                            className={`p-2 hover:scale-110 transition-transform ml-auto ${isLiked ? (isSRT ? 'text-red-500' : 'text-gold-500') : 'text-white'}`}
+                            onClick={handleLike}
+                        >
+                            <Heart className={`w-6 h-6 ${isLiked ? 'fill-current' : ''}`} />
+                        </button>
+                    )}
+                    {currentStory.user.id !== user?.id && user?.role !== 'VISITOR' && (
                         <button className="text-white p-2 hover:scale-110 transition-transform">
                             <Send className="w-6 h-6" />
                         </button>

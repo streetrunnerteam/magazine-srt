@@ -33,7 +33,12 @@ export default function RankingModal({ isOpen, onClose, isSRT }: RankingModalPro
                 // I'll use /users for now and sort client side, assuming not too many users yet.
                 // Ideally backend should handle this.
                 const response = await api.get('/users');
-                setUsers(response.data);
+                if (Array.isArray(response.data)) {
+                    setUsers(response.data);
+                } else {
+                    console.error('Invalid users data format', response.data);
+                    setUsers([]);
+                }
             } catch (error) {
                 console.error('Failed to fetch ranking', error);
             } finally {

@@ -52,9 +52,14 @@ export default function AdminCreateAnnouncement({ showToast }: AdminCreateAnnoun
             setLogoUrl('');
             setBgUrl('');
             if (showToast) showToast('Anúncio criado com sucesso!', 'success');
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to create announcement', error);
-            if (showToast) showToast('Erro ao criar anúncio', 'error');
+            const errorMessage = error.response?.data?.error || 'Erro ao criar anúncio';
+            if (showToast) {
+                showToast(errorMessage, 'error');
+            } else {
+                alert(errorMessage);
+            }
         } finally {
             setLoading(false);
         }

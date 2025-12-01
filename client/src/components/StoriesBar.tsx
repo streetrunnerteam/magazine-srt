@@ -117,24 +117,26 @@ export default function StoriesBar({ viewingStoryId, onViewStory, onCloseStory }
 
             <div className="w-full overflow-x-auto pb-4 hide-scrollbar">
                 <div className="flex gap-4 px-2">
-                    {/* Add Story Button */}
-                    <div className="flex flex-col items-center gap-2 cursor-pointer group" onClick={handleAddStory}>
-                        <div className={`w-16 h-16 rounded-full p-[2px] relative ${isSRT ? 'bg-gray-800' : 'bg-gray-800'}`}>
-                            <div className="w-full h-full rounded-full overflow-hidden relative border-2 border-black">
-                                <img
-                                    src={user?.avatarUrl || `https://ui-avatars.com/api/?name=${user?.name || 'User'}`}
-                                    alt="Your Story"
-                                    className="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition-opacity"
-                                />
-                                <div className={`absolute inset-0 flex items-center justify-center bg-black/30`}>
-                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center ${isSRT ? 'bg-red-600' : 'bg-gold-500'} text-white shadow-lg`}>
-                                        <Plus className="w-4 h-4" />
+                    {/* Add Story Button - Only for Members */}
+                    {user?.role !== 'VISITOR' && (
+                        <div className="flex flex-col items-center gap-2 cursor-pointer group" onClick={handleAddStory}>
+                            <div className={`w-16 h-16 rounded-full p-[2px] relative ${isSRT ? 'bg-gray-800' : 'bg-gray-800'}`}>
+                                <div className="w-full h-full rounded-full overflow-hidden relative border-2 border-black">
+                                    <img
+                                        src={user?.avatarUrl || `https://ui-avatars.com/api/?name=${user?.name || 'User'}`}
+                                        alt="Your Story"
+                                        className="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition-opacity"
+                                    />
+                                    <div className={`absolute inset-0 flex items-center justify-center bg-black/30`}>
+                                        <div className={`w-6 h-6 rounded-full flex items-center justify-center ${isSRT ? 'bg-red-600' : 'bg-gold-500'} text-white shadow-lg`}>
+                                            <Plus className="w-4 h-4" />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
+                            <span className={`text-xs font-medium ${isSRT ? 'text-gray-300' : 'text-gray-300'}`}>Seu Story</span>
                         </div>
-                        <span className={`text-xs font-medium ${isSRT ? 'text-gray-300' : 'text-gray-300'}`}>Seu Story</span>
-                    </div>
+                    )}
 
                     {/* Stories List */}
                     {stories.map((story) => (
